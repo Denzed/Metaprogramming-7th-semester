@@ -26,5 +26,6 @@ Racket introduction home assignment
 
 ## Notes
 
+- Y combinator is implemented as external `fix` function
 - external functions defined in Racket may be referenced and called through application (however, they will be forcibly curried exactly for this purpose)
 - if several lambdas bind a variable by the same name then the innermost one would be taken
