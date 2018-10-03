@@ -1,7 +1,7 @@
 #lang racket
 
 (require "auxiliary_functions.rkt")
-(provide int int-assn int-TM)
+(provide int int-TM)
 
 (define fill_in
   (lambda () '()))
@@ -34,9 +34,8 @@
 
 (define int
   (lambda (p d)
-    (let ([initial-vars (match (car p) [(list 'read vars ...) vars])]
-          [first-bb (cdadr p)])
-      (int-bb (initial-prog p) (initial-st initial-vars d) first-bb))))
+    (let ([initial-vars (match (car p) [(list 'read vars ...) vars])])
+      (int-bb (initial-prog p) (initial-st initial-vars d) (initial-bb p)))))
 
 (define int-bb
   (lambda (prog st bb)

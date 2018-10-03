@@ -17,6 +17,7 @@
                    [j d])
           (st-set st i j))
         (error "initial-st error: program arity mismatch"))))
+(define (initial-bb p) (cdadr p))
 
 ; for basic_blocks
 (define bb-lookup dict-ref)
