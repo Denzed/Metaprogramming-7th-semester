@@ -17,7 +17,7 @@
                    [j d])
           (st-set st i j))
         (error "initial-st error: program arity mismatch"))))
-(define (initial-bb p) (cdadr p))
+(define (initial-bb p) (cadr p))
 
 ; for basic_blocks
 (define bb-lookup dict-ref)
@@ -37,16 +37,11 @@
     (eval e ns)))
 
 ; eval expression in current environment
-(define subst
-  (lambda (st e)
-    (match e
-      [`(,x . ,y) `(,(subst st x) . ,(subst st y))]
-      [`,x (if (st-bound? st x) (st-lookup st x) x)]
-      )))
-(define eval-exp
-  (lambda (st e)
-    (let ([ee (subst st e)])
-      (my-eval ee))))
+(define (subst st e)
+  (match e [`(,x . ,y) `(,(subst st x) . ,(subst st y))]
+           [`,x        (if (st-bound? st x) (st-lookup st x) x)]))
+(define (eval-exp st e)
+  (let ([ee (subst st e)]) (my-eval ee)))
 
 ; for goto in TM
 (define Car 
@@ -59,3 +54,21 @@
   (lambda (Q label) 
     (member label Q
       (lambda (s t) (equal? s (car t))))))
+
+; mix functions
+; add new label to dictionary
+(define (add-label labels key) 
+    (if (dict-has-key? labels key) labels (dict-set labels key `(label ,(dict-count labels)))))
+
+; get mapped label from dictionary
+(define get-label dict-ref)
+
+; check if expression is static by division
+(define (static-by-div? expr sv)
+    (with-handlers ([exn:fail:contract:variable? (lambda (err) #f)]) 
+        (eval-exp sv expr)
+        #t))
+
+; try to reduce expression using static information
+(define reduce
+  (lambda (e div) (subst div e))) ; currently no partial computation implemented

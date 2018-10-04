@@ -35,7 +35,7 @@
 (define int
   (lambda (p d)
     (let ([initial-vars (match (car p) [(list 'read vars ...) vars])])
-      (int-bb (initial-prog p) (initial-st initial-vars d) (initial-bb p)))))
+      (int-bb (initial-prog p) (initial-st initial-vars d) (cdr (initial-bb p))))))
 
 (define int-bb
   (lambda (prog st bb)
@@ -48,11 +48,11 @@
                   (int-bb prog st (bb-lookup prog label))]
                 [`(if ,cond ,then ,else) 
                   (int-bb prog st (bb-lookup prog (if (eval-exp st cond) then else)))]
-                [`(return ,expr) (eval-exp st expr)])))
+                [`(return ,expr)
+                  (eval-exp st expr)])))
 
-(define int-assn
-  (lambda (st assn)
-    (match assn [`(:= ,var ,expr) (st-set st var (eval-exp st expr))])))
+(define (int-assn st assn)
+    (match assn [`(:= ,var ,expr) (st-set st var (eval-exp st expr))]))
 
 (define int-TM
   '((read Q Right)
@@ -78,11 +78,11 @@
               (:= Right (cons Symbol (Cdr Right)))
               (goto loop))
     (do-goto (:= Next-label (cadr Inst))
-            (goto jump))
+             (goto jump))
     (do-if (:= Symbol (cadr Inst))
-          (:= Next-label (cadddr Inst))
-          (if (equal? Symbol (Car Right)) jump loop))
+           (:= Next-label (cadddr Inst))
+           (if (equal? Symbol (Car Right)) jump loop))
     (jump (:= Qtail (new-Qtail Q Next-label))
           (goto loop))
-    (error (return ('unknown instruction ,Inst)))
+    (error (return (append '(unknown instruction) Inst)))
     (stop (return Right))))
