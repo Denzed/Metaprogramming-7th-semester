@@ -1,7 +1,8 @@
 #lang racket
 
 (require "auxiliary_functions.rkt")
-(provide mix)
+(require "int.rkt")
+(provide mix do-mix)
 
 (define mix '((read program division vars_0)
               (init (:= program-point_0 (car (initial-bb program)))
@@ -75,7 +76,7 @@
         
               (inner-loop-match-return (if (equal? 'return (car Inst)) inner-loop-return inner-loop-no-match))
         
-              (inner-loop-no-match (error "expression not matched"))
+              (inner-loop-no-match (return `(instruction not matched: ,Inst)))
         
               (inner-loop-return (:= expr (cadr Inst))
                                  (:= code (cons `(return ,(reduce expr vars)) code))
@@ -85,3 +86,10 @@
                                (goto main-loop-check))
                                
               (main-loop-exit (return (reverse residual-code)))))
+
+; convenient mix applier
+(define (do-mix prog div sv)
+      (let* ([div-in (list->set div)]
+            [bound-pred (lambda (var) (st-bound? sv var))]
+            [read-out (cons 'read (filter-not bound-pred (cdar prog)))])
+           (cons read-out (int mix `(,prog ,div-in ,sv)))))

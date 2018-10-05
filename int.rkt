@@ -49,10 +49,12 @@
                 [`(if ,cond ,then ,else) 
                   (int-bb prog st (bb-lookup prog (if (eval-exp st cond) then else)))]
                 [`(return ,expr)
-                  (eval-exp st expr)])))
+                  (eval-exp st expr)]
+                [else (error `(,jump is not a jump))])))
 
 (define (int-assn st assn)
-    (match assn [`(:= ,var ,expr) (st-set st var (eval-exp st expr))]))
+    (match assn [`(:= ,var ,expr) (st-set st var (eval-exp st expr))]
+                [else (error `(,assn is not an assignment))]))
 
 (define int-TM
   '((read Q Right)
