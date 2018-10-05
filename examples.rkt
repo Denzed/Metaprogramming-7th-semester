@@ -32,15 +32,31 @@
                 (test "int TM" (int int-TM `(,TM-prog ,TM-in)) TM-out)]
       [else "skipping FlowChart interpreter tests"])
 
+; pretty printer for FlowChart programs
+(define (print-prog prog) 
+      (for-each 
+            (lambda (bb) (cond [(equal? 'read (car bb)) (printf "~s\n" bb)]
+                               [else (printf "(~s" (car bb))
+                                     (map (lambda (bb-line) (printf "\n   ~s" bb-line)) (cdr bb))
+                                     (printf ")\n")]))
+            prog))
+
+; convenient mix applier
+(define (do-mix prog div sv)
+      (let* ([div-in (list->set div)]
+            [bound-pred (lambda (var) (st-bound? sv var))]
+            [read-out (cons 'read (filter-not bound-pred (cdar prog)))])
+           (cons read-out (int mix `(,prog ,div-in ,sv)))))
+
 ; mix tests
-(define TM-FC-prog (cons '(read Right) (int mix `(,int-TM ,(list->set '(Q Qtail Inst Ins Symbol Next-label)) ,(st-set st-empty 'Q TM-prog)))))
-(for-each 
-      (lambda (bb) 
-            (cond 
-                  [(equal? 'read (car bb)) (printf "~s\n" bb)]
-                  [else (printf "(~s" (car bb))
-                        (map (lambda (bb-line) (printf "\n   ~s" bb-line)) (cdr bb))
-                        (printf ")\n")]))
-      TM-FC-prog)
-(cond [test-mix (test "int TM-FC" (int TM-FC-prog `(,TM-in)) TM-out)]
+(cond [test-mix (let ([TM-FC-prog 
+                       (do-mix int-TM 
+                               '(Q Qtail Inst Ins Symbol Next-label)
+                               (st-set st-empty 'Q TM-prog))])
+                     (test "int TM-FC" (int TM-FC-prog `(,TM-in)) TM-out))
+                (let ([compiler-prog
+                       (do-mix mix
+                               '(program division program-point_0)
+                               (st-set (st-set st-empty 'program int-TM) 'division '(Q Qtail Inst Ins Symbol Next-label)))])
+                     (print-prog compiler-prog))]
       [else "skipping mix tests"])
