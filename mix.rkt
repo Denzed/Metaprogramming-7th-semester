@@ -20,7 +20,16 @@
                               (:= program-point (car cur))
                               (:= vars (cdr cur))
                               (:= marked (set-add marked cur))
-                              (:= bb (bb-lookup program program-point))
+                              (:= program-points (prog-points program))
+                              (:= print (printf "finding ~v\n" program-point))
+                              (goto lookup-pp-main))
+              (lookup-pp-main (:= program-point-cur (car program-points))
+                              (:= program-points (cdr program-points))
+                              (goto lookup-pp-main-cond))
+              (lookup-pp-main-cond 
+                              (if (equal? program-point program-point-cur) main-loop-body-cont lookup-pp-main))
+              (main-loop-body-cont
+                              (:= bb (bb-lookup program program-point-cur))
                               (:= labels (add-label labels cur))
                               (:= label (get-label labels cur))
                               (:= code `(,label))
@@ -63,12 +72,12 @@
               (inner-loop-if-static-else (:= bb (bb-lookup program else-label))
                                          (goto inner-loop-check))
         
-              (inner-loop-if-dynamic (:= then-label (cons then-label vars))
-                                     (:= else-label (cons else-label vars))  
-                                     (:= labels (add-label (add-label labels then-label) else-label))
-                                     (:= then-dynamic-label (get-label labels then-label))
-                                     (:= else-dynamic-label (get-label labels else-label))
-                                     (:= to-add (set then-label else-label))
+              (inner-loop-if-dynamic (:= then-out-label (cons then-label vars))
+                                     (:= else-out-label (cons else-label vars))  
+                                     (:= labels (add-label (add-label labels then-out-label) else-out-label))
+                                     (:= then-dynamic-label (get-label labels then-out-label))
+                                     (:= else-dynamic-label (get-label labels else-out-label))
+                                     (:= to-add (set then-out-label else-out-label))
                                      (:= to-add (set-subtract to-add marked))
                                      (:= pending (set-union pending to-add))
                                      (:= code (cons `(if ,(reduce expr vars) ,then-dynamic-label ,else-dynamic-label) code))
@@ -82,7 +91,9 @@
                                  (:= code (cons `(return ,(reduce expr vars)) code))
                                  (goto inner-loop-check))
         
-              (inner-loop-exit (:= residual-code (cons (reverse code) residual-code))
+              (inner-loop-exit 
+                              ;;;  (:= print (pretty-print (reverse code)))
+                               (:= residual-code (cons (reverse code) residual-code))
                                (goto main-loop-check))
                                
               (main-loop-exit (return (reverse residual-code)))))

@@ -20,7 +20,7 @@
                   "OK" 
                   (format "failed -- got ~v instead of ~v" val expected-val))))
 
-(define test-int #t)
+(define test-int #f)
 (define test-mix #t)
 
 ; interpreter tests
@@ -40,7 +40,7 @@
                      (test "int TM-FC" (int TM-FC-prog `(,TM-in)) TM-out))
                 (let ([compiler-prog
                        (do-mix mix
-                               '(program division program-point_0)
+                               '(program division program-point_0 program-points program-point-cur bb Inst x expr then-label else-label)
                                (st-set (st-set st-empty 'program int-TM) 
                                        'division 
                                        (list->set '(Q Qtail Inst Ins Symbol Next-label))))])

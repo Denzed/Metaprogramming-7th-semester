@@ -28,6 +28,7 @@
     (for/fold ([bbs bb-empty])
               ([i (cdr p)])
       (bb-set bbs (car i) (cdr i)))))
+(define (prog-points prog) (sequence->list (in-dict-keys prog)))
 
 ; my-eval
 (define-namespace-anchor a)
