@@ -5,9 +5,8 @@
 ; for environment
 (define st-lookup dict-ref)
 (define st-bound? dict-has-key?)
-(define st-set
-  (lambda (st x e)
-      (dict-set st x (cons 'quote (list e)))))
+(define (st-set st x e) (dict-set st x e))
+(define st-remove dict-remove)
 (define st-empty  #hash())
 (define initial-st
   (lambda (vars d)
@@ -30,6 +29,9 @@
       (bb-set bbs (car i) (cdr i)))))
 (define (prog-points prog) (sequence->list (in-dict-keys prog)))
 
+; for division
+(define (division-at-pp div pp) (if (dict? div) (dict-ref div pp) div))
+
 ; my-eval
 (define-namespace-anchor a)
 (define ns (namespace-anchor->namespace a))
@@ -40,7 +42,7 @@
 ; eval expression in current environment
 (define (subst st e)
   (match e [`(,x . ,y) `(,(subst st x) . ,(subst st y))]
-           [`,x        (if (st-bound? st x) (st-lookup st x) x)]))
+           [`,x        (if (st-bound? st x) `',(st-lookup st x) x)]))
 (define (eval-exp st e)
   (let ([ee (subst st e)]) (my-eval ee)))
 
@@ -65,11 +67,12 @@
 (define get-label dict-ref)
 
 ; check if expression is static by division
-(define (static-by-div? expr sv)
+(define (eval-static-or-#f expr sv)
     (with-handlers ([exn:fail:contract:variable? (lambda (err) #f)]) 
-        (eval-exp sv expr)
-        #t))
+        (list (eval-exp sv expr))))
 
 ; try to reduce expression using static information
-(define reduce
-  (lambda (e div) (subst div e))) ; currently no partial computation implemented
+(define (reduce e st)
+  ;;; (printf "REDUCE: ~v\n" e)
+  (match e [`(,x . ,y) `(,(reduce x st) . ,(reduce y st))]
+           [`,x        (if (st-bound? st x) `',(st-lookup st x) x)]))

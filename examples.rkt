@@ -20,7 +20,7 @@
                   "OK" 
                   (format "failed -- got ~v instead of ~v" val expected-val))))
 
-(define test-int #f)
+(define test-int #t)
 (define test-mix #t)
 
 ; interpreter tests
@@ -35,14 +35,17 @@
 ; mix tests
 (cond [test-mix (let ([TM-FC-prog 
                        (do-mix int-TM 
-                               '(Q Qtail Inst Ins Symbol Next-label)
+                               (set 'Q 'Qtail 'Inst 'Ins 'Symbol 'Next-label)
                                (st-set st-empty 'Q TM-prog))])
+                     (pretty-print TM-FC-prog)
                      (test "int TM-FC" (int TM-FC-prog `(,TM-in)) TM-out))
                 (let ([compiler-prog
-                       (do-mix mix
-                               '(program division program-point_0 program-points program-point-cur bb Inst x expr then-label else-label)
-                               (st-set (st-set st-empty 'program int-TM) 
-                                       'division 
-                                       (list->set '(Q Qtail Inst Ins Symbol Next-label))))])
+                       (do-mix 
+                               Mix
+                               (set 'program 'division 'program-point_0 'program-points 'program-point-cur 'bb 'Inst 'x 'expr 'then-label 'else-label)
+                               (st-set (st-set (st-set st-empty 
+                                       'program  int-TM) 
+                                       'division '())
+                                       'vars_0   st-empty))])
                      (pretty-print compiler-prog))]
       [else "skipping mix tests"])

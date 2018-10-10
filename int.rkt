@@ -86,5 +86,5 @@
            (if (equal? Symbol (Car Right)) jump loop))
     (jump (:= Qtail (new-Qtail Q Next-label))
           (goto loop))
-    (error (return (append '(unknown instruction) Inst)))
+    (error (return `(unknown instruction ,Inst)))
     (stop (return Right))))
