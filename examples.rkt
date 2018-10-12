@@ -40,7 +40,7 @@
                      (pretty-print TM-FC-prog (current-error-port))
                      (test "int TM-FC" (int TM-FC-prog `(,TM-in)) TM-out))
                 (let* ([compiler-division 
-                        '(program division program-point_0 program-point-cur bb Inst)]
+                        '(program division program-point-cur bb Inst)]
                        [compiler-prog
                         (do-mix 
                                 mix

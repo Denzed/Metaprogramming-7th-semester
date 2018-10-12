@@ -90,9 +90,10 @@
 (define get-label dict-ref)
 
 ; check if expression is static by division
-(define (eval-static-or-#f expr sv)
+(define (static-expr? expr sv)
     (with-handlers ([exn:fail:contract:variable? (lambda (err) #f)]) 
-        (list (eval-exp sv expr))))
+        (eval-exp sv expr)
+        #t))
 
 ; try to reduce expression using static information
 (define (reduce e st)
