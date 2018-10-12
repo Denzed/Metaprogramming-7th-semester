@@ -44,6 +44,7 @@
 
 (define int-jump
   (lambda (prog st jump)
+    ;;; (printf "JUMP: ~v\n" jump)
     (match jump [`(goto ,label) 
                   (int-bb prog st (bb-lookup prog label))]
                 [`(if ,cond ,then ,else) 
@@ -53,13 +54,15 @@
                 [else (error `(,jump is not a jump))])))
 
 (define (int-assn st assn)
-    (match assn [`(:= ,var ,expr) (st-set st var (eval-exp st expr))]
+    (match assn [`(:= ,var ,expr) 
+                                  ;;; (printf "ASSN: ~v => ~v\n" assn (eval-exp st expr))
+                                  (st-set st var (eval-exp st expr))]
                 [else (error `(,assn is not an assignment))]))
 
 (define int-TM
   '((read Q Right)
     (init (:= Qtail Q)
-          (:= Left '())
+          (:= Left (list))
           (goto loop))
     (loop (if (null? Qtail) stop cont))
     (cont (:= Inst (cdar Qtail))
@@ -86,5 +89,5 @@
            (if (equal? Symbol (Car Right)) jump loop))
     (jump (:= Qtail (new-Qtail Q Next-label))
           (goto loop))
-    (error (return `(unknown instruction ,Inst)))
+    (error (return `(unknown instruction ,Ins)))
     (stop (return Right))))

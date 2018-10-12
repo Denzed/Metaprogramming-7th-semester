@@ -20,7 +20,7 @@
                   "OK" 
                   (format "failed -- got ~v instead of ~v" val expected-val))))
 
-(define test-int #t)
+(define test-int #f)
 (define test-mix #t)
 
 ; interpreter tests
@@ -35,17 +35,24 @@
 ; mix tests
 (cond [test-mix (let ([TM-FC-prog 
                        (do-mix int-TM 
-                               (set 'Q 'Qtail 'Inst 'Ins 'Symbol 'Next-label)
+                               (list->set '(Q Qtail Inst Ins Symbol Next-label))
                                (st-set st-empty 'Q TM-prog))])
-                     (pretty-print TM-FC-prog)
+                     (pretty-print TM-FC-prog (current-error-port))
                      (test "int TM-FC" (int TM-FC-prog `(,TM-in)) TM-out))
-                (let ([compiler-prog
-                       (do-mix 
-                               Mix
-                               (set 'program 'division 'program-point_0 'program-points 'program-point-cur 'bb 'Inst 'x 'expr 'then-label 'else-label)
-                               (st-set (st-set (st-set st-empty 
-                                       'program  int-TM) 
-                                       'division '())
-                                       'vars_0   st-empty))])
-                     (pretty-print compiler-prog))]
+                (let* ([compiler-division 
+                        '(program division program-point_0 program-point-cur bb Inst)]
+                       [compiler-prog
+                        (do-mix 
+                                mix
+                                (list->set compiler-division)
+                                (st-set* st-empty 
+                                        'program  int-TM
+                                        'division (list->set '(Q Qtail Inst Ins Symbol Next-label))))]
+                       [TM-FC-prog 
+                        (int compiler-prog `(,(st-set st-empty 'Q TM-prog)))])
+                      (pretty-print compiler-prog (current-error-port))
+                      (pretty-print TM-FC-prog (current-error-port))
+                      (test "int compiled TM-FC" (int TM-FC-prog `(,TM-in)) TM-out)
+                  ;;;     (printf "")
+                      )]
       [else "skipping mix tests"])
