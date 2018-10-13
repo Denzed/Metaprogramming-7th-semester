@@ -1,6 +1,5 @@
 #lang racket
 
-
 (require "auxiliary_functions.rkt")
 (require "int.rkt")
 (provide mix do-mix)
@@ -19,16 +18,17 @@
                     (:= program (initial-prog program))
                     (goto main-loop-check))
                 
-              (main-loop-check (if (stream-empty? pending) main-loop-exit main-loop-body))
+              (main-loop-check (:= pending (clear-initial-marked marked pending))
+                               (:= program-point-cur (car (prog-points program)))
+                               (:= bb-index -1)
+                               (:= Inst '())
+                               (if (stream-empty? pending) main-loop-exit main-loop-body))
         
               (main-loop-body (:= cur (stream-first pending))
                               (:= pending (stream-rest pending))
-                              (if (set-member? marked cur) main-loop-check main-loop-body-cont1))
-              (main-loop-body-cont1 
                               (:= marked (set-add marked cur))
                               (:= program-point (car cur))
                               (:= vars (cdr cur))
-                              (:= program-point-cur (car (prog-points program)))
                               (goto lookup-pp-main-cond))
               (lookup-pp-main (:= program-point-cur (prog-point-next program program-point-cur))
                               (goto lookup-pp-main-cond))
@@ -39,7 +39,6 @@
               (lookup-pp-main-fail 
                               (return `(pp not found: ,program-point)))
               (main-loop-body-cont2
-                              (:= bb-index -1)
                               (:= code (list (get-label labels cur)))
                               (goto inner-loop-check))
                 
@@ -51,38 +50,40 @@
               (inner-loop-body (:= Inst (list-ref (bb-lookup program program-point-cur) bb-index))
                                (if (equal? ':= (car Inst)) inner-loop-assign inner-loop-match-goto))
             
-              (inner-loop-assign (if (set-member? (division-at-pp division program-point-cur) (cadr Inst))
+              (inner-loop-assign (if (set-member? 
+                                                  (division-at-pp division program-point-cur) 
+                                                  (cadr Inst)) 
                                      inner-loop-assign-static 
                                      inner-loop-assign-dynamic))
         
-              (inner-loop-assign-static 
-                                        (:= vars (st-set vars (cadr Inst) (eval-exp vars (caddr Inst))))
+              (inner-loop-assign-static (:= vars (st-set vars (cadr Inst) (eval-exp vars (caddr Inst))))
+                                        (:= Inst '())
                                         (goto inner-loop-check))
               
-              (inner-loop-assign-dynamic 
-                                         (:= code (cons (list ':= (cadr Inst) (reduce (caddr Inst) vars)) code))
-                                         (:= vars (st-remove vars (cadr Inst)))
+              (inner-loop-assign-dynamic (:= code (cons (list ':= (cadr Inst) (reduce (caddr Inst) vars)) code))
+                                         (:= Inst '())
                                          (goto inner-loop-check))
         
-              (inner-loop-match-goto (if (equal? 'goto (car Inst)) inner-loop-goto inner-loop-match-if))
+              (inner-loop-match-goto (:= program-point-cur (car (prog-points program)))
+                                     (:= bb-index -1)
+                                     (if (equal? 'goto (car Inst)) inner-loop-goto inner-loop-match-if))
         
               (inner-loop-goto (:= program-point-cur (cadr Inst))
-                               (:= bb-index -1)
+                               (:= Inst '())
                                (goto inner-loop-check))
         
               (inner-loop-match-if (if (equal? 'if (car Inst)) inner-loop-if inner-loop-match-return))
         
-              (inner-loop-if (:= expr (cadr Inst))
-                             (if (static-expr? expr vars) inner-loop-if-static inner-loop-if-dynamic))
+              (inner-loop-if (if (static-expr? (cadr Inst) vars) inner-loop-if-static inner-loop-if-dynamic))
         
-              (inner-loop-if-static (if (eval-exp vars expr) inner-loop-if-static-then inner-loop-if-static-else))
+              (inner-loop-if-static (if (eval-exp vars (cadr Inst)) inner-loop-if-static-then inner-loop-if-static-else))
         
               (inner-loop-if-static-then (:= program-point-cur (caddr Inst))
-                                         (:= bb-index -1)
+                                         (:= Inst '())
                                          (goto inner-loop-check))
 
               (inner-loop-if-static-else (:= program-point-cur (cadddr Inst))
-                                         (:= bb-index -1)
+                                         (:= Inst '())
                                          (goto inner-loop-check))
         
               (inner-loop-if-dynamic (:= then-out-label (cons (caddr Inst) vars))
@@ -91,18 +92,19 @@
                                      (:= then-dynamic-label (get-label labels then-out-label))
                                      (:= else-dynamic-label (get-label labels else-out-label))
                                      (:= pending (stream-append pending (list then-out-label else-out-label)))
-                                     (:= code (cons (list 'if (reduce expr vars) then-dynamic-label else-dynamic-label) code))
-                                     (goto inner-loop-check))
+                                     (:= code (cons (list 'if (reduce (cadr Inst) vars) then-dynamic-label else-dynamic-label) code))
+                                     (:= Inst '())
+                                     (goto inner-loop-exit))
         
               (inner-loop-match-return (if (equal? 'return (car Inst)) inner-loop-return inner-loop-no-match))
         
               (inner-loop-no-match (return `(instruction not matched: ,Inst)))
         
               (inner-loop-return (:= code (cons (list 'return (reduce (cadr Inst) vars)) code))
-                                 (goto inner-loop-check))
+                                 (:= Inst '())
+                                 (goto inner-loop-exit))
         
               (inner-loop-exit (:= residual-code (cons (reverse code) residual-code))
-                              ;;;  (:= print (pretty-print (reverse code)))
                                (goto main-loop-check))
                                
               (main-loop-exit (return (reverse residual-code)))))

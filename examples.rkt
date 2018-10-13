@@ -20,16 +20,16 @@
                   "OK" 
                   (format "failed -- got ~v instead of ~v" val expected-val))))
 
-(define test-int #f)
+(define test-int #t)
 (define test-mix #t)
 
 ; interpreter tests
 (define TM-prog '((0 if 0 goto 3) (1 right) (2 goto 0) (3 write 1)))
 (define TM-in '(1 1 0 1 1 0 1))
 (define TM-out '(1 1 1 0 1))
-(cond [test-int (test "find x" (int find_name '(x (x y z) (1 2 3))) 1)
-                (test "find z" (int find_name '(z (x y z) (1 2 3))) 3)
-                (test "int TM" (int int-TM `(,TM-prog ,TM-in)) TM-out)]
+(cond [test-int (test "int(find, x)"                  (int find_name '(x (x y z) (1 2 3))) 1)
+                (test "int(find, z)"                  (int find_name '(z (x y z) (1 2 3))) 3)
+                (test "int(int-TM, [TM-prog, TM-in])" (int int-TM `(,TM-prog ,TM-in)) TM-out)]
       [else "skipping FlowChart interpreter tests"])
 
 ; mix tests
@@ -37,8 +37,8 @@
                        (do-mix int-TM 
                                (list->set '(Q Qtail Inst Ins Symbol Next-label))
                                (st-set st-empty 'Q TM-prog))])
-                     (pretty-print TM-FC-prog (current-error-port))
-                     (test "int TM-FC" (int TM-FC-prog `(,TM-in)) TM-out))
+                  ;;;    (pretty-print TM-FC-prog (current-error-port))
+                     (test "mix(int-TM, TM-prog)(TM-in)" (int TM-FC-prog `(,TM-in)) TM-out))
                 (let* ([compiler-division 
                         '(program division program-point-cur bb-index Inst)]
                        [compiler-prog
@@ -50,9 +50,7 @@
                                         'division (list->set '(Q Qtail Inst Ins Symbol Next-label))))]
                        [TM-FC-prog 
                         (int compiler-prog `(,(st-set st-empty 'Q TM-prog)))])
-                      (pretty-print compiler-prog (current-error-port))
-                      (pretty-print TM-FC-prog (current-error-port))
-                      (test "int compiled TM-FC" (int TM-FC-prog `(,TM-in)) TM-out)
-                  ;;;     (printf "")
-                      )]
+                  ;;;     (pretty-print compiler-prog (current-error-port))
+                  ;;;     (pretty-print TM-FC-prog (current-error-port))
+                      (test "mix(mix, int-TM)(TM-prog)(TM-in)" (int TM-FC-prog `(,TM-in)) TM-out))]
       [else "skipping mix tests"])

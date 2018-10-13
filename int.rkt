@@ -44,7 +44,6 @@
 
 (define int-jump
   (lambda (prog st jump)
-    ;;; (printf "JUMP: ~v\n" jump)
     (match jump [`(goto ,label) 
                   (int-bb prog st (bb-lookup prog label))]
                 [`(if ,cond ,then ,else) 
@@ -54,9 +53,7 @@
                 [else (error `(,jump is not a jump))])))
 
 (define (int-assn st assn)
-    (match assn [`(:= ,var ,expr) 
-                                  ;;; (printf "ASSN: ~v => ~v\n" assn (eval-exp st expr))
-                                  (st-set st var (eval-exp st expr))]
+    (match assn [`(:= ,var ,expr) (st-set st var (eval-exp st expr))]
                 [else (error `(,assn is not an assignment))]))
 
 (define int-TM

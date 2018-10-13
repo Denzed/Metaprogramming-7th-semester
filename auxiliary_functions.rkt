@@ -97,15 +97,14 @@
 
 ; try to reduce expression using static information
 (define (reduce e st)
-  ;;; (printf "REDUCE: ~v\n" e)
   (match e [`(,x . ,y) `(,(reduce x st) . ,(reduce y st))]
            [`,x        (if (st-bound? st x) `',(st-lookup st x) x)]))
 
-; reduce v2
-;;; (define (reduce expr sv)
-;;;   (define (reduce-inner e st)
-;;;           (match e [`(,x . ,y) `(,(reduce-inner x st) . ,(reduce-inner y st))]
-;;;                    [`,x        (if (st-bound? st x) `',(st-lookup st x) x)]))
-  
-;;;   (let ([maybe-result (eval-static-or-#f expr sv)])
-;;;        (if maybe-result `',(car maybe-result) (reduce-inner expr sv))))
+; remove marked program points from pending head
+(define (clear-initial-marked marked pending)
+  (cond [(stream-empty? pending) 
+         pending]
+        [(set-member? marked (stream-first pending)) 
+         (clear-initial-marked marked (stream-rest pending))]
+        [else 
+         pending]))
